@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smart Tourist Safety System Design System
+   Professional, government-grade styling for emergency/safety applications
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base colors - Clean, official white background */
+    --background: 0 0% 100%;
+    --foreground: 216 19% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 216 19% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 19% 16%;
+
+    /* Primary - Deep government blue (trustworthy, official) */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 217 91% 45%;
+    --primary-light: 217 91% 75%;
+
+    /* Secondary - Teal (safe, positive status) */
+    --secondary: 174 72% 56%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 174 72% 85%;
+
+    /* Emergency colors - Critical for panic/danger states */
+    --emergency: 0 84% 60%;
+    --emergency-foreground: 0 0% 100%;
+    --emergency-light: 0 84% 95%;
+    --emergency-dark: 0 84% 45%;
+
+    /* Warning - Amber for alerts and cautions */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+
+    /* Success - Green for confirmed safe states */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 95%;
+
+    /* Neutral colors */
+    --muted: 217 12% 96%;
+    --muted-foreground: 216 19% 44%;
+
+    --accent: 217 12% 96%;
+    --accent-foreground: 216 19% 16%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 12% 89%;
+    --input: 217 12% 89%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    /* Safety-specific gradients */
+    --gradient-safe: linear-gradient(135deg, hsl(var(--success)), hsl(var(--secondary)));
+    --gradient-warning: linear-gradient(135deg, hsl(var(--warning)), hsl(38 92% 65%));
+    --gradient-emergency: linear-gradient(135deg, hsl(var(--emergency)), hsl(0 84% 75%));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+
+    /* Interactive shadows */
+    --shadow-safe: 0 10px 30px -10px hsl(var(--success) / 0.3);
+    --shadow-emergency: 0 10px 30px -10px hsl(var(--emergency) / 0.4);
+    --shadow-primary: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+
+    /* Animation timings */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode - Professional dark theme for low-light emergency use */
+    --background: 216 28% 7%;
+    --foreground: 0 0% 98%;
+
+    --card: 216 28% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 216 28% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217 91% 70%;
+    --primary-foreground: 216 28% 7%;
+    --primary-dark: 217 91% 55%;
+    --primary-light: 217 91% 85%;
+
+    --secondary: 174 72% 66%;
+    --secondary-foreground: 216 28% 7%;
+    --secondary-light: 174 72% 25%;
+
+    --emergency: 0 84% 70%;
+    --emergency-foreground: 216 28% 7%;
+    --emergency-light: 0 84% 25%;
+    --emergency-dark: 0 84% 55%;
+
+    --warning: 38 92% 60%;
+    --warning-foreground: 216 28% 7%;
+    --warning-light: 38 92% 25%;
+
+    --success: 142 71% 55%;
+    --success-foreground: 216 28% 7%;
+    --success-light: 142 71% 25%;
+
+    --muted: 217 19% 18%;
+    --muted-foreground: 217 19% 65%;
+
+    --accent: 217 19% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 216 28% 7%;
+
+    --border: 217 19% 21%;
+    --input: 217 19% 21%;
+    --ring: 217 91% 70%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Accessibility improvements */
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-2 outline-primary outline-offset-2;
+  }
+}
+
+@layer components {
+  /* Emergency/Panic button styles */
+  .btn-emergency {
+    @apply bg-gradient-to-br from-emergency to-emergency-dark text-emergency-foreground;
+    @apply shadow-lg hover:shadow-xl active:scale-95;
+    @apply transition-all duration-200 font-semibold;
+    @apply focus:ring-4 focus:ring-emergency/30;
+  }
+
+  /* Safety status indicator */
+  .status-safe {
+    @apply bg-gradient-to-r from-success to-secondary text-success-foreground;
+  }
+
+  .status-warning {
+    @apply bg-gradient-to-r from-warning via-warning to-amber-400 text-warning-foreground;
+  }
+
+  .status-danger {
+    @apply bg-gradient-to-r from-emergency to-red-600 text-emergency-foreground;
+  }
+
+  /* Authority badge */
+  .badge-authority {
+    @apply bg-gradient-to-r from-primary to-primary-dark text-primary-foreground;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* Interactive cards */
+  .card-interactive {
+    @apply bg-card border border-border rounded-lg p-4 transition-all duration-200;
+    @apply hover:border-primary/30 hover:shadow-md active:scale-[0.98];
+  }
+
+  /* Safe zone indicator */
+  .zone-safe {
+    @apply border-l-4 border-l-success bg-success-light/50;
+  }
+
+  .zone-warning {
+    @apply border-l-4 border-l-warning bg-warning-light/50;
+  }
+
+  .zone-restricted {
+    @apply border-l-4 border-l-emergency bg-emergency-light/50;
+  }
+}

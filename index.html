@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Tourist Safety System | Government of India</title>
+    <meta name="description" content="Advanced tourist safety monitoring system with real-time tracking, emergency response, and AI-powered threat detection for secure travel across India." />
+    <meta name="author" content="Government of India - Ministry of Tourism" />
+    <meta name="keywords" content="tourist safety, emergency response, India travel, GPS tracking, panic button, travel security" />
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4285f4" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Tourist Safety" />
+    
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Smart Tourist Safety System" />
+    <meta property="og:description" content="Advanced tourist safety monitoring with emergency response for secure travel across India" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512x512.png" />
+    <meta property="og:url" content="https://tourist-safety.gov.in" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Smart Tourist Safety System" />
+    <meta name="twitter:description" content="Emergency response and safety monitoring for tourists in India" />
+    <meta name="twitter:image" content="/icon-512x512.png" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
