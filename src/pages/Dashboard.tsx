@@ -10,6 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Shield, 
   MapPin, 
@@ -42,6 +46,17 @@ const Dashboard = () => {
   const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
   const [notificationsCount, setNotificationsCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  // Emergency UI state
+  const [isContactsOpen, setIsContactsOpen] = useState(false);
+  const [contactForm, setContactForm] = useState<{ id?: string; name: string; phone: string; relationship?: string }>({ name: '', phone: '', relationship: '' });
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const videoRef = (null as unknown) as HTMLVideoElement | null;
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
 
   const isAuthority = user?.role === 'authority';
 
@@ -116,6 +131,9 @@ const Dashboard = () => {
 
   const safetyStatus = getSafetyStatus(safetyScore);
   const StatusIcon = safetyStatus.icon;
+
+  const { emergencyContacts, addEmergencyContact, updateEmergencyContact, removeEmergencyContact } = useAppStore();
+  const { addAlert } = useAlertStore();
 
   if (isAuthority) {
     return (
@@ -204,6 +222,142 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Camera Dialog */}
+          <Dialog open={isCameraOpen} onOpenChange={(open) => {
+            setIsCameraOpen(open);
+            if (!open && videoStream) {
+              videoStream.getTracks().forEach(t => t.stop());
+              setVideoStream(null);
+            }
+          }}>
+            <DialogContent className="max-w-xl mx-4">
+              <DialogHeader>
+                <DialogTitle>Photo Evidence</DialogTitle>
+              </DialogHeader>
+              <div className="p-4">
+                <div className="bg-black rounded overflow-hidden">
+                  {videoStream ? (
+                    // @ts-ignore - simple video attach via ref in effect
+                    <video autoPlay playsInline ref={(el) => { if (el && videoStream) { try { el.srcObject = videoStream; } catch(e){} } }} className="w-full h-64 object-cover" />
+                  ) : (
+                    <div className="w-full h-64 flex items-center justify-center text-muted-foreground">Camera initializing...</div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2 mt-3">
+                  <Button variant="outline" onClick={() => { if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); setVideoStream(null); } setIsCameraOpen(false); }}>Close</Button>
+                  <Button onClick={() => {
+                    if (!videoStream) return alert('Camera not ready');
+                    const track = videoStream.getVideoTracks()[0];
+                    const imageCapture = new (window as any).ImageCapture(track);
+                    imageCapture.takePhoto().then((blob: Blob) => {
+                      addAlert({ type: 'panic', severity: 'high', message: 'Photo evidence captured', location: currentLocation, isRead: false });
+                      // stop and close
+                      videoStream.getTracks().forEach(t => t.stop());
+                      setVideoStream(null);
+                      setIsCameraOpen(false);
+                    }).catch(() => {
+                      // fallback to canvas capture
+                      const videoEl = document.querySelector('video');
+                      if (!videoEl) return alert('Capture failed');
+                      const canvas = document.createElement('canvas');
+                      canvas.width = (videoEl as HTMLVideoElement).videoWidth || 640;
+                      canvas.height = (videoEl as HTMLVideoElement).videoHeight || 480;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) ctx.drawImage(videoEl as HTMLVideoElement, 0, 0, canvas.width, canvas.height);
+                      canvas.toBlob((blob) => {
+                        addAlert({ type: 'panic', severity: 'high', message: 'Photo evidence captured', location: currentLocation, isRead: false });
+                      });
+                      videoStream.getTracks().forEach(t => t.stop());
+                      setVideoStream(null);
+                      setIsCameraOpen(false);
+                    });
+                  }}>Capture</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Audio Dialog */}
+          <Dialog open={isAudioOpen} onOpenChange={(open) => { if (!open) { setIsAudioOpen(false); if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); } }}>
+            <DialogContent className="max-w-md mx-4">
+              <DialogHeader>
+                <DialogTitle>Voice Record</DialogTitle>
+              </DialogHeader>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Record an audio clip to attach to your emergency alert.</p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => {
+                      if (!mediaRecorder) return alert('Microphone not ready');
+                      if (mediaRecorder.state === 'recording') return;
+                      setRecordedChunks([]);
+                      mediaRecorder.start();
+                      mediaRecorder.ondataavailable = (e) => setRecordedChunks((c) => [...c, e.data]);
+                    }}>Start</Button>
+                    <Button variant="outline" onClick={() => { if (!mediaRecorder) return; if (mediaRecorder.state === 'recording') mediaRecorder.stop(); }}>Stop</Button>
+                    <Button onClick={() => {
+                      if (recordedChunks.length === 0) return alert('No recording');
+                      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                      addAlert({ type: 'panic', severity: 'high', message: 'Voice evidence uploaded', location: currentLocation, isRead: false });
+                      setIsAudioOpen(false);
+                    }}>Upload</Button>
+                  </div>
+                  {recordedChunks.length > 0 && (
+                    <audio controls src={URL.createObjectURL(new Blob(recordedChunks))}></audio>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Contacts Dialog */}
+          <Dialog open={isContactsOpen} onOpenChange={setIsContactsOpen}>
+            <DialogContent className="max-w-lg mx-4">
+              <DialogHeader>
+                <DialogTitle>Emergency Contacts</DialogTitle>
+              </DialogHeader>
+              <div className="p-4 space-y-3">
+                <div className="space-y-2">
+                  {emergencyContacts.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between p-2 border rounded">
+                      <div>
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-xs text-muted-foreground">{c.relationship} • {c.phone}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => { setEditingContactId(c.id); setContactForm({ id: c.id, name: c.name, phone: c.phone, relationship: c.relationship }); }}>Edit</Button>
+                        <Button variant="outline" size="sm" onClick={() => removeEmergencyContact(c.id)}>Delete</Button>
+                        <Button size="sm" onClick={() => window.open(`tel:${c.phone}`)}>Call</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-3">
+                  <h4 className="font-semibold mb-2">Add / Edit Contact</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <Input placeholder="Name" value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} />
+                    <Input placeholder="Phone" value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} />
+                    <Input placeholder="Relationship" value={contactForm.relationship} onChange={(e) => setContactForm({ ...contactForm, relationship: e.target.value })} />
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button variant="outline" onClick={() => { setContactForm({ name: '', phone: '', relationship: '' }); setEditingContactId(null); }}>Clear</Button>
+                    <Button onClick={() => {
+                      if (!contactForm.name || !contactForm.phone) return alert('Name & phone required');
+                      if (editingContactId) {
+                        updateEmergencyContact(editingContactId, { name: contactForm.name, phone: contactForm.phone, relationship: contactForm.relationship });
+                      } else {
+                        addEmergencyContact({ name: contactForm.name, phone: contactForm.phone, relationship: contactForm.relationship });
+                      }
+                      setContactForm({ name: '', phone: '', relationship: '' });
+                      setEditingContactId(null);
+                    }}>{editingContactId ? 'Update' : 'Add'}</Button>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     );
@@ -338,10 +492,11 @@ const Dashboard = () => {
                   variant="outline" 
                   className="h-16 flex-col gap-2 text-emergency border-emergency hover:bg-emergency hover:text-emergency-foreground"
                   onClick={() => {
-                    // Mock photo capture
+                    // open camera dialog
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                      setIsCameraOpen(true);
                       navigator.mediaDevices.getUserMedia({ video: true })
-                        .then(() => alert('Camera accessed for emergency documentation'))
+                        .then((s) => setVideoStream(s))
                         .catch(() => alert('Camera access denied'));
                     } else {
                       alert('Camera not available');
@@ -356,10 +511,18 @@ const Dashboard = () => {
                   variant="outline" 
                   className="h-16 flex-col gap-2 text-emergency border-emergency hover:bg-emergency hover:text-emergency-foreground"
                   onClick={() => {
-                    // Mock voice recording
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                      setIsAudioOpen(true);
                       navigator.mediaDevices.getUserMedia({ audio: true })
-                        .then(() => alert('Voice recording started for emergency'))
+                        .then((stream) => {
+                          try {
+                            const mr = new MediaRecorder(stream as MediaStream);
+                            setRecordedChunks([]);
+                            setMediaRecorder(mr);
+                          } catch (e) {
+                            alert('Unable to start recorder');
+                          }
+                        })
                         .catch(() => alert('Microphone access denied'));
                     } else {
                       alert('Microphone not available');
@@ -368,6 +531,15 @@ const Dashboard = () => {
                 >
                   <AlertTriangle className="w-5 h-5" />
                   <span className="text-xs">Voice Record</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-16 flex-col gap-2 text-emergency border-emergency hover:bg-emergency hover:text-emergency-foreground"
+                  onClick={() => setIsContactsOpen(true)}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-xs">Contacts</span>
                 </Button>
               </div>
             </CardContent>

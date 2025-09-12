@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/translations';
@@ -43,58 +43,77 @@ const Itinerary = () => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  
-  // Mock itinerary data
-  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>([
-    {
-      id: '1',
-      title: 'Visit Kamakhya Temple',
-      description: 'Explore the famous Kamakhya Temple, one of the most revered Shakti Peethas',
-      location: 'Kamakhya Temple, Guwahati',
-      startTime: '08:00',
-      endTime: '10:00',
-      date: '2025-09-08',
-      status: 'planned',
-      type: 'sightseeing',
-      priority: 'high'
-    },
-    {
-      id: '2',
-      title: 'Brahmaputra River Cruise',
-      description: 'Scenic boat ride on the mighty Brahmaputra River',
-      location: 'Fancy Bazaar Ghat, Guwahati',
-      startTime: '11:00',
-      endTime: '13:00',
-      date: '2025-09-08',
-      status: 'planned',
-      type: 'activity',
-      priority: 'medium'
-    },
-    {
-      id: '3',
-      title: 'Local Assamese Lunch',
-      description: 'Traditional Assamese thali at a local restaurant',
-      location: 'Paradise Restaurant, Pan Bazaar',
-      startTime: '13:30',
-      endTime: '14:30',
-      date: '2025-09-08',
-      status: 'planned',
-      type: 'dining',
-      priority: 'medium'
-    },
-    {
-      id: '4',
-      title: 'Check-in Hotel Brahmaputra',
-      description: 'Check-in and rest at the hotel',
-      location: 'Hotel Brahmaputra, M.G. Road',
-      startTime: '15:00',
-      endTime: '16:00',
-      date: '2025-09-08',
-      status: 'completed',
-      type: 'accommodation',
-      priority: 'high'
-    }
-  ]);
+  // itinerary data persisted to localStorage
+  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>(() => {
+    try {
+      const raw = localStorage.getItem('itinerary-items');
+      if (raw) return JSON.parse(raw) as ItineraryItem[];
+    } catch (e) {}
+
+    // default demo items
+    return [
+      {
+        id: '1',
+        title: 'Visit Kamakhya Temple',
+        description: 'Explore the famous Kamakhya Temple, one of the most revered Shakti Peethas',
+        location: 'Kamakhya Temple, Guwahati',
+        startTime: '08:00',
+        endTime: '10:00',
+        date: '2025-09-08',
+        status: 'planned',
+        type: 'sightseeing',
+        priority: 'high'
+      },
+      {
+        id: '2',
+        title: 'Brahmaputra River Cruise',
+        description: 'Scenic boat ride on the mighty Brahmaputra River',
+        location: 'Fancy Bazaar Ghat, Guwahati',
+        startTime: '11:00',
+        endTime: '13:00',
+        date: '2025-09-08',
+        status: 'planned',
+        type: 'activity',
+        priority: 'medium'
+      },
+      {
+        id: '3',
+        title: 'Local Assamese Lunch',
+        description: 'Traditional Assamese thali at a local restaurant',
+        location: 'Paradise Restaurant, Pan Bazaar',
+        startTime: '13:30',
+        endTime: '14:30',
+        date: '2025-09-08',
+        status: 'planned',
+        type: 'dining',
+        priority: 'medium'
+      },
+      {
+        id: '4',
+        title: 'Check-in Hotel Brahmaputra',
+        description: 'Check-in and rest at the hotel',
+        location: 'Hotel Brahmaputra, M.G. Road',
+        startTime: '15:00',
+        endTime: '16:00',
+        date: '2025-09-08',
+        status: 'completed',
+        type: 'accommodation',
+        priority: 'high'
+      }
+    ];
+  });
+
+  // Form UI state
+  const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+  const [formData, setFormData] = useState<Partial<ItineraryItem> | null>(null);
+
+  // persist itinerary items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('itinerary-items', JSON.stringify(itineraryItems));
+    } catch (e) {}
+  }, [itineraryItems]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -142,6 +161,54 @@ const Itinerary = () => {
   const todayItems = itineraryItems.filter(item => item.date === selectedDate);
   const upcomingItems = itineraryItems.filter(item => new Date(item.date) > new Date(selectedDate));
 
+  const openAddForm = () => {
+    setFormMode('add');
+    setFormData({
+      id: Date.now().toString(),
+      title: '',
+      description: '',
+      location: '',
+      startTime: '09:00',
+      endTime: '10:00',
+      date: selectedDate,
+      status: 'planned',
+      type: 'activity',
+      priority: 'medium'
+    });
+    setShowForm(true);
+  };
+
+  const openEditForm = (item: ItineraryItem) => {
+    setFormMode('edit');
+    setFormData({ ...item });
+    setShowForm(true);
+  };
+
+  const saveForm = () => {
+    if (!formData) return;
+    // basic validation
+    if (!formData.title || !formData.date || !formData.startTime) {
+      // eslint-disable-next-line no-alert
+      alert('Please provide title, date and start time');
+      return;
+    }
+
+    if (formMode === 'add') {
+      setItineraryItems((s) => [...s, formData as ItineraryItem]);
+    } else {
+      setItineraryItems((s) => s.map(it => it.id === formData.id ? (formData as ItineraryItem) : it));
+    }
+
+    setShowForm(false);
+    setFormData(null);
+  };
+
+  const deleteItem = (id: string) => {
+    // eslint-disable-next-line no-restricted-globals
+    if (!confirm('Delete this itinerary item?')) return;
+    setItineraryItems((s) => s.filter(i => i.id !== id));
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -153,7 +220,7 @@ const Itinerary = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-foreground flex items-center gap-3">
+              <h1 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-3">
                 <Calendar className="w-6 h-6 md:w-8 md:h-8" />
                 My Itinerary
               </h1>
@@ -171,7 +238,7 @@ const Itinerary = () => {
                 <Edit className="w-4 h-4 mr-2" />
                 {isEditing ? 'Done' : 'Edit'}
               </Button>
-              <Button size="sm">
+              <Button size="sm" onClick={openAddForm}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item
               </Button>
@@ -250,11 +317,11 @@ const Itinerary = () => {
 
                           {isEditing && (
                             <div className="flex justify-end gap-2 pt-2 border-t">
-                              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => openEditForm(item)}>
                                 <Edit className="w-3 h-3 mr-2" />
                                 Edit
                               </Button>
-                              <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                              <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => deleteItem(item.id)}>
                                 <Trash2 className="w-3 h-3 mr-2" />
                                 Delete
                               </Button>
@@ -271,7 +338,7 @@ const Itinerary = () => {
                     <CardContent className="p-8 text-center">
                       <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground">No items scheduled for this date</p>
-                      <Button className="mt-4" size="sm">
+                      <Button className="mt-4" size="sm" onClick={openAddForm}>
                         <Plus className="w-4 h-4 mr-2" />
                         Add First Item
                       </Button>
@@ -280,6 +347,81 @@ const Itinerary = () => {
                 )}
               </div>
             </TabsContent>
+
+            {/* Inline Add/Edit Form */}
+            {showForm && formData && (
+              <div className="fixed inset-0 z-50 flex items-start justify-center p-6">
+                <div className="bg-background border rounded-lg w-full max-w-2xl shadow-lg">
+                  <div className="p-4 border-b flex items-center justify-between">
+                    <h3 className="font-semibold">{formMode === 'add' ? 'Add Item' : 'Edit Item'}</h3>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => { setShowForm(false); setFormData(null); }}>Cancel</Button>
+                      <Button size="sm" onClick={saveForm}>Save</Button>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Title</Label>
+                        <Input value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Date</Label>
+                        <Input type="date" value={formData.date || selectedDate} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>Start Time</Label>
+                        <Input type="time" value={formData.startTime || '09:00'} onChange={(e) => setFormData({ ...formData, startTime: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label>End Time</Label>
+                        <Input type="time" value={formData.endTime || '10:00'} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Location</Label>
+                      <Input value={formData.location || ''} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                    </div>
+
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label>Status</Label>
+                        <select className="w-full input" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}>
+                          <option value="planned">Planned</option>
+                          <option value="ongoing">Ongoing</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label>Type</Label>
+                        <select className="w-full input" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}>
+                          <option value="sightseeing">Sightseeing</option>
+                          <option value="dining">Dining</option>
+                          <option value="accommodation">Accommodation</option>
+                          <option value="transport">Transport</option>
+                          <option value="activity">Activity</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label>Priority</Label>
+                        <select className="w-full input" value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}>
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Upcoming Itinerary */}
             <TabsContent value="upcoming" className="space-y-4">
