@@ -712,158 +712,158 @@ const MapPage = () => {
               </div>
             </TabsContent>
 
-            {/* Nearby Services Tab - Remains the same as before */}
-            <TabsContent value="services" className="space-y-6">
-              <div className="grid gap-6">
-                {/* Police Stations */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-primary" />
-                      Police Stations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {nearbyServices.police.map((station, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-foreground">{station.name}</h4>
-                          <p className="text-sm text-muted-foreground">{station.address}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <span className="text-xs text-primary font-medium">{station.distance}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 text-warning fill-current" />
-                              <span className="text-xs">{station.rating}</span>
-                            </div>
+          {/* Nearby Services Tab */}
+          <TabsContent value="services" className="space-y-6">
+            <div className="grid gap-6">
+              {/* Police Stations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    Police Stations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyServices.police.map((station, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-foreground">{station.name}</h4>
+                        <p className="text-sm text-muted-foreground">{station.address}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-xs text-primary font-medium">{station.distance}</span>
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-3 h-3 text-warning fill-current" />
+                            <span className="text-xs">{station.rating}</span>
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button size="sm" variant="outline">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Navigation className="w-3 h-3 mr-1" />
-                            Directions
-                          </Button>
-                        </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                      <div className="flex flex-col space-y-2">
+                        <Button size="sm" variant="outline">
+                          <Phone className="w-3 h-3 mr-1" />
+                          Call
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Navigation className="w-3 h-3 mr-1" />
+                          Directions
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-                {/* Hospitals */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Hospital className="w-5 h-5 text-emergency" />
-                      Hospitals & Medical Centers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {nearbyServices.hospitals.map((hospital, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-foreground">{hospital.name}</h4>
-                          <p className="text-sm text-muted-foreground">{hospital.address}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <span className="text-xs text-emergency font-medium">{hospital.distance}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 text-warning fill-current" />
-                              <span className="text-xs">{hospital.rating}</span>
-                            </div>
+              {/* Hospitals */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Hospital className="w-5 h-5 text-emergency" />
+                    Hospitals & Medical Centers
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyServices.hospitals.map((hospital, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-foreground">{hospital.name}</h4>
+                        <p className="text-sm text-muted-foreground">{hospital.address}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-xs text-emergency font-medium">{hospital.distance}</span>
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-3 h-3 text-warning fill-current" />
+                            <span className="text-xs">{hospital.rating}</span>
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button size="sm" variant="outline">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Navigation className="w-3 h-3 mr-1" />
-                            Directions
-                          </Button>
-                        </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                      <div className="flex flex-col space-y-2">
+                        <Button size="sm" variant="outline">
+                          <Phone className="w-3 h-3 mr-1" />
+                          Call
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Navigation className="w-3 h-3 mr-1" />
+                          Directions
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-                {/* Hotels */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="w-5 h-5 text-secondary" />
-                      Hotels & Accommodation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {nearbyServices.hotels.map((hotel, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-foreground">{hotel.name}</h4>
-                          <p className="text-sm text-muted-foreground">{hotel.address}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <span className="text-xs text-secondary font-medium">{hotel.distance}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 text-warning fill-current" />
-                              <span className="text-xs">{hotel.rating}</span>
-                            </div>
+              {/* Hotels */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="w-5 h-5 text-secondary" />
+                    Hotels & Accommodation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyServices.hotels.map((hotel, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-foreground">{hotel.name}</h4>
+                        <p className="text-sm text-muted-foreground">{hotel.address}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-xs text-secondary font-medium">{hotel.distance}</span>
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-3 h-3 text-warning fill-current" />
+                            <span className="text-xs">{hotel.rating}</span>
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button size="sm" variant="outline">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Navigation className="w-3 h-3 mr-1" />
-                            Directions
-                          </Button>
-                        </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                      <div className="flex flex-col space-y-2">
+                        <Button size="sm" variant="outline">
+                          <Phone className="w-3 h-3 mr-1" />
+                          Call
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Navigation className="w-3 h-3 mr-1" />
+                          Directions
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-                {/* Safe Places */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-success" />
-                      Safe Places & Tourist Centers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {nearbyServices.safePlaces.map((place, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-foreground">{place.name}</h4>
-                          <p className="text-sm text-muted-foreground">{place.address}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <span className="text-xs text-success font-medium">{place.distance}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 text-warning fill-current" />
-                              <span className="text-xs">{place.rating}</span>
-                            </div>
+              {/* Safe Places */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-success" />
+                    Safe Places & Tourist Centers
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {nearbyServices.safePlaces.map((place, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-foreground">{place.name}</h4>
+                        <p className="text-sm text-muted-foreground">{place.address}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-xs text-success font-medium">{place.distance}</span>
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-3 h-3 text-warning fill-current" />
+                            <span className="text-xs">{place.rating}</span>
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-2">
-                          <Button size="sm" variant="outline">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Navigation className="w-3 h-3 mr-1" />
-                            Directions
-                          </Button>
-                        </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                      <div className="flex flex-col space-y-2">
+                        <Button size="sm" variant="outline">
+                          <Phone className="w-3 h-3 mr-1" />
+                          Call
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Navigation className="w-3 h-3 mr-1" />
+                          Directions
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
           </Tabs>
         </motion.div>
       </div>
