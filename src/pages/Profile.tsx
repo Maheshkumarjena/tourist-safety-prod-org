@@ -417,7 +417,28 @@ const Profile = () => {
                 <CardContent className="text-center space-y-6">
                   <div className="inline-block p-6 bg-white rounded-lg border">
                     <QRCodeSVG 
-                      value={`TOURIST_DIGITAL_ID:${user?.id}:${Date.now()}`}
+                      value={JSON.stringify({
+                        type: 'TOURIST_DIGITAL_ID',
+                        id: user?.id,
+                        timestamp: Date.now(),
+                        data: {
+                          touristId: `DTID-${user?.id}`,
+                          firstName: user?.firstName,
+                          lastName: user?.lastName,
+                          email: user?.email,
+                          phone: user?.phoneNumber,
+                          isVerified: user?.isKYCVerified,
+                          safetyScore: user?.safetyScore,
+                          currentTrip: user?.currentTrip && {
+                            destination: user.currentTrip.destination,
+                            startDate: user.currentTrip.startDate,
+                            endDate: user.currentTrip.endDate,
+                            status: user.currentTrip.status
+                          },
+                          validFrom: 'Sep 07, 2025',
+                          validUntil: 'Sep 14, 2025'
+                        }
+                      })}
                       size={200}
                       level="M"
                       includeMargin={true}

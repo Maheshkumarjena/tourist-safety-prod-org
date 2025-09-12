@@ -37,6 +37,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polygon, Rectangle } from 'react-leaflet';
 
+// Workaround for react-leaflet typings mismatch in this project: cast components to any when used in JSX
+const AnyMapContainer = MapContainer as any;
+const AnyTileLayer = TileLayer as any;
+const AnyMarker = Marker as any;
+const AnyCircle = Circle as any;
+const AnyPolygon = Polygon as any;
+const AnyRectangle = Rectangle as any;
+
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -144,6 +152,8 @@ const MapPage = () => {
   const [showZones, setShowZones] = useState(true);
   const [mapCenter, setMapCenter] = useState<[number, number]>([26.1445, 91.7362]); // Guwahati
   const [zoomLevel, setZoomLevel] = useState(13);
+  const [dynamicZonesEnabled, setDynamicZonesEnabled] = useState(true);
+  const [dynamicZones, setDynamicZones] = useState<ZoneArea[]>([]);
 
   // Mock locations for demo
   const mockLocations: MapLocation[] = [
@@ -184,6 +194,7 @@ const MapPage = () => {
         [26.149, 91.739] as [number, number],
         [26.152, 91.743] as [number, number]
       ],
+      coordinates: [[26.1505, 91.741]] ,
       color: '#ef4444',
       fillColor: '#ef4444',
       fillOpacity: 0.2
@@ -238,6 +249,7 @@ const MapPage = () => {
         [26.136, 91.740] as [number, number],
         [26.142, 91.746] as [number, number]
       ],
+      coordinates: [[26.139, 91.743]],
       color: '#ec4899',
       fillColor: '#ec4899',
       fillOpacity: 0.2
@@ -252,6 +264,47 @@ const MapPage = () => {
       color: '#8b5cf6',
       fillColor: '#8b5cf6',
       fillOpacity: 0.15
+    },
+    // Additional mock zones to cover larger area
+    {
+      id: 'safe-2',
+      type: 'safe',
+      name: 'Extended Safe Corridor',
+      description: 'Wide safe corridor connecting multiple tourist spots',
+      coordinates: [
+        [26.154, 91.722],
+        [26.154, 91.748],
+        [26.138, 91.748],
+        [26.138, 91.722]
+      ],
+      color: '#10b981',
+      fillColor: '#10b981',
+      fillOpacity: 0.08
+    },
+    {
+      id: 'warning-2',
+      type: 'warning',
+      name: 'Flood Risk Zone',
+      description: 'Low-lying area prone to flooding during heavy rains',
+      radius: 1200,
+      coordinates: [[26.132, 91.734]],
+      color: '#f59e0b',
+      fillColor: '#f59e0b',
+      fillOpacity: 0.12
+    },
+    {
+      id: 'restricted-2',
+      type: 'restricted',
+      name: 'Extended Restricted Perimeter',
+      description: 'Buffer zone around restricted installations',
+      bounds: [
+        [26.150, 91.720],
+        [26.160, 91.750]
+      ],
+      coordinates: [[26.155, 91.735]],
+      color: '#ef4444',
+      fillColor: '#ef4444',
+      fillOpacity: 0.06
     },
   ];
 
@@ -292,6 +345,86 @@ const MapPage = () => {
       setMapCenter([currentLocation.lat, currentLocation.lng]);
     }
   }, [currentLocation]);
+
+  // Generate random zones around a center point
+  const generateRandomZones = (center: [number, number], count = 6) => {
+    const [lat, lng] = center;
+    const types: ZoneArea['type'][] = ['safe', 'warning', 'restricted', 'tourist', 'natural', 'cultural', 'commercial'];
+    const newZones: ZoneArea[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distanceKm = 0.2 + Math.random() * 1.5; // 200m to 1.7km
+      const deltaLat = (distanceKm / 111) * Math.cos(angle); // rough conversion
+      const deltaLng = (distanceKm / (111 * Math.cos(lat * (Math.PI / 180)))) * Math.sin(angle);
+      const centerLat = lat + deltaLat;
+      const centerLng = lng + deltaLng;
+
+      const kind = types[Math.floor(Math.random() * types.length)];
+      const id = `dyn-${Date.now()}-${i}`;
+
+      if (Math.random() > 0.5) {
+        // circle zone
+        newZones.push({
+          id,
+          type: kind,
+          name: `${kind.charAt(0).toUpperCase() + kind.slice(1)} Zone (dynamic)`,
+          description: 'Auto-generated nearby zone',
+          coordinates: [[centerLat, centerLng]],
+          radius: 200 + Math.random() * 1200,
+          color: getIconColor(kind),
+          fillColor: getIconColor(kind),
+          fillOpacity: 0.12
+        });
+      } else if (Math.random() > 0.5) {
+        // rectangle
+        const latDelta = 0.001 + Math.random() * 0.006;
+        const lngDelta = 0.001 + Math.random() * 0.006;
+        newZones.push({
+          id,
+          type: kind,
+          name: `${kind.charAt(0).toUpperCase() + kind.slice(1)} Area (dynamic)`,
+          description: 'Auto-generated nearby area',
+          bounds: [
+            [centerLat - latDelta, centerLng - lngDelta],
+            [centerLat + latDelta, centerLng + lngDelta]
+          ],
+          coordinates: [[centerLat, centerLng]],
+          color: getIconColor(kind),
+          fillColor: getIconColor(kind),
+          fillOpacity: 0.1
+        });
+      } else {
+        // polygon
+        const size = 3 + Math.floor(Math.random() * 3);
+        const coords: [number, number][] = [];
+        for (let p = 0; p < size; p++) {
+          const a = p * (Math.PI * 2 / size) + (Math.random() - 0.5) * 0.4;
+          const r = 0.0005 + Math.random() * 0.004;
+          coords.push([centerLat + r * Math.cos(a), centerLng + r * Math.sin(a)]);
+        }
+        newZones.push({
+          id,
+          type: kind,
+          name: `${kind.charAt(0).toUpperCase() + kind.slice(1)} Polygon (dynamic)`,
+          description: 'Auto-generated nearby polygon',
+          coordinates: coords,
+          color: getIconColor(kind),
+          fillColor: getIconColor(kind),
+          fillOpacity: 0.12
+        });
+      }
+    }
+
+    setDynamicZones(newZones);
+  };
+
+  // initialize dynamic zones around map center or current location
+  useEffect(() => {
+    const center = currentLocation ? [currentLocation.lat, currentLocation.lng] as [number, number] : mapCenter;
+    if (dynamicZonesEnabled) generateRandomZones(center, 7);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLocation, dynamicZonesEnabled]);
 
   const handleLocationClick = (location: MapLocation) => {
     setSelectedLocation(location);
@@ -408,59 +541,59 @@ const MapPage = () => {
             <TabsContent value="map" className="space-y-6">
               <div className="grid lg:grid-cols-4 gap-6">
                 {/* Map Container */}
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-3 z-900">
                   <Card className="h-[600px]">
                     <CardContent className="p-0 h-full">
-                      <MapContainer
-                        center={mapCenter}
-                        zoom={zoomLevel}
+                      <AnyMapContainer
+                        center={mapCenter as any}
+                        zoom={zoomLevel as any}
                         style={{ height: '100%', width: '100%' }}
-                        zoomControl={false}
+                        zoomControl={false as any}
                       >
                         <ChangeView center={mapCenter} zoom={zoomLevel} />
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        <AnyTileLayer
+                          attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' as any}
+                          url={'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' as any}
                         />
-                        
-                        {/* Render zone areas */}
-                        {showZones && zoneAreas.map((zone) => {
+
+                        {/* Render zone areas (static + dynamic) */}
+                        {showZones && [...zoneAreas, ...(dynamicZonesEnabled ? dynamicZones : [])].map((zone) => {
                           if (zone.bounds) {
                             return (
-                              <Rectangle
+                              <AnyRectangle
                                 key={zone.id}
-                                bounds={zone.bounds}
+                                bounds={zone.bounds as any}
                                 pathOptions={{
                                   color: zone.color,
                                   fillColor: zone.fillColor,
                                   fillOpacity: zone.fillOpacity,
                                   weight: 2
-                                }}
+                                } as any}
                                 eventHandlers={{
                                   click: () => {
                                     setSelectedLocation({
-                                      lat: (zone.bounds![0][0] + zone.bounds![1][0]) / 2,
-                                      lng: (zone.bounds![0][1] + zone.bounds![1][1]) / 2,
+                                      lat: ((zone.bounds as any)[0][0] + (zone.bounds as any)[1][0]) / 2,
+                                      lng: ((zone.bounds as any)[0][1] + (zone.bounds as any)[1][1]) / 2,
                                       type: zone.type as any,
                                       title: zone.name,
                                       description: zone.description
                                     });
                                   }
-                                }}
+                                } as any}
                               />
                             );
                           } else if (zone.radius && zone.coordinates) {
                             return (
-                              <Circle
+                              <AnyCircle
                                 key={zone.id}
-                                center={zone.coordinates[0]}
-                                radius={zone.radius}
+                                center={(zone.coordinates[0] || [zone.bounds?.[0][0], zone.bounds?.[0][1]]) as any}
+                                radius={zone.radius as any}
                                 pathOptions={{
                                   color: zone.color,
                                   fillColor: zone.fillColor,
                                   fillOpacity: zone.fillOpacity,
                                   weight: 2
-                                }}
+                                } as any}
                                 eventHandlers={{
                                   click: () => {
                                     setSelectedLocation({
@@ -471,25 +604,25 @@ const MapPage = () => {
                                       description: zone.description
                                     });
                                   }
-                                }}
+                                } as any}
                               />
                             );
                           } else {
                             return (
-                              <Polygon
+                              <AnyPolygon
                                 key={zone.id}
-                                positions={zone.coordinates}
+                                positions={zone.coordinates as any}
                                 pathOptions={{
                                   color: zone.color,
                                   fillColor: zone.fillColor,
                                   fillOpacity: zone.fillOpacity,
                                   weight: 2
-                                }}
+                                } as any}
                                 eventHandlers={{
                                   click: () => {
                                     // Calculate center of polygon
-                                    const latSum = zone.coordinates.reduce((sum, coord) => sum + coord[0], 0);
-                                    const lngSum = zone.coordinates.reduce((sum, coord) => sum + coord[1], 0);
+                                    const latSum = zone.coordinates.reduce((sum: number, coord: number[]) => sum + coord[0], 0);
+                                    const lngSum = zone.coordinates.reduce((sum: number, coord: number[]) => sum + coord[1], 0);
                                     const centerLat = latSum / zone.coordinates.length;
                                     const centerLng = lngSum / zone.coordinates.length;
                                     
@@ -501,11 +634,11 @@ const MapPage = () => {
                                       description: zone.description
                                     });
                                   }
-                                }}
+                                } as any}
                               />
                             );
                           }
-                        })}
+                            })}
                         
                         {/* Render location markers */}
                         {allLocations.map((location, index) => {
@@ -513,14 +646,14 @@ const MapPage = () => {
                           if (location.type === 'tourist' && !showTourists) return null;
                           if ((location.type === 'safe' || location.type === 'warning' || location.type === 'restricted') && !showSafeZones) return null;
 
-                          return (
-                            <Marker
+                            return (
+                            <AnyMarker
                               key={index}
-                              position={[location.lat, location.lng]}
-                              icon={createCustomIcon(location.type)}
+                              position={[location.lat, location.lng] as any}
+                              icon={createCustomIcon(location.type) as any}
                               eventHandlers={{
                                 click: () => handleLocationClick(location),
-                              }}
+                              } as any}
                             >
                               <Popup>
                                 <div className="p-2">
@@ -535,10 +668,10 @@ const MapPage = () => {
                                   </Badge>
                                 </div>
                               </Popup>
-                            </Marker>
+                            </AnyMarker>
                           );
                         })}
-                      </MapContainer>
+                      </AnyMapContainer>
                     </CardContent>
                   </Card>
                 </div>
@@ -557,6 +690,16 @@ const MapPage = () => {
                           checked={showZones}
                           onCheckedChange={setShowZones}
                         />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        {/* <label className="text-sm font-medium">Dynamic Nearby Zones</label>
+                        <div className="flex items-center space-x-2">
+                          <Switch checked={dynamicZonesEnabled} onCheckedChange={setDynamicZonesEnabled} />
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const center = currentLocation ? [currentLocation.lat, currentLocation.lng] as [number, number] : mapCenter;
+                            generateRandomZones(center, 7);
+                          }}>Regenerate</Button>
+                        </div> */}
                       </div>
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium">Safe Zones</label>

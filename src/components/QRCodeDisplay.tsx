@@ -43,7 +43,11 @@ export const QRCodeDisplay = () => {
   const generateDigitalID = async () => {
     try {
       setIsLoading(true);
-      const response = await blockchainAPI.issueDigitalID();
+      const response = await blockchainAPI.issueDigitalID({
+        userId: user?.id || '12345',
+        idData: user?.isKYCVerified ? 'verified-kyc-data' : 'pending-verification',
+        expiryDate: user?.currentTrip?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
       
       // Mock digital ID data - in real app this would come from blockchain
       const mockDigitalID: DigitalIDData = {

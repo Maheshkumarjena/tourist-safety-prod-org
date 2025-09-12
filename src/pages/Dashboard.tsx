@@ -95,7 +95,11 @@ const Dashboard = () => {
         // Blockchain digital ID (attempt to fetch or issue)
         try {
           // If backend provides a get QR endpoint for the user, prefer that. Otherwise, issue a digital ID.
-          const bc = await blockchainAPI.issueDigitalID();
+          const bc = await blockchainAPI.issueDigitalID({
+            userId: user?.id || '12345',
+            idData: user?.isKYCVerified ? 'verified-kyc-data' : 'pending-verification',
+            expiryDate: user?.currentTrip?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          });
           if (!mounted) return;
           setDigitalId(bc?.digitalId || null);
         } catch (err) {

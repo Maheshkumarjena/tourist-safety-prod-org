@@ -25,10 +25,10 @@ export const AdminHeader: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const doLogout = useLogout();
   const handleLogout = () => {
-    logout();
+    doLogout();
     toast({ title: 'Logged out successfully' });
-    navigate('/admin/auth/login');
   };
 
   const handleNavigation = (path: string) => {

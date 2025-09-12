@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore, useAppStore, useLocationStore } from '@/lib/store';
+import { useLogout } from '@/hooks/use-logout';
 import { useTranslation, translations } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,9 +57,10 @@ const Settings = () => {
     }
   };
 
+  const doLogout = useLogout();
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
-      logout();
+      doLogout();
     }
   };
 

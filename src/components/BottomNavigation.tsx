@@ -76,7 +76,7 @@ export function BottomNavigation() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
+    <div className="fixed bottom-0 left-0 right-0 z-[1000] bg-card border-t border-border">
       <div className="flex items-center justify-around px-2 py-2">
         {mainNavItems.map((item) => (
           <Link

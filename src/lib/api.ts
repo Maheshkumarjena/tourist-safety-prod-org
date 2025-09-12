@@ -202,10 +202,24 @@ export const alertAPI = {
   },
 };
 
+interface DigitalIDRequest {
+  userId: string;
+  idData: string;
+  expiryDate: string;
+}
+
 export const blockchainAPI = {
-  issueDigitalID: async () => {
+  issueDigitalID: async (data?: Partial<DigitalIDRequest>) => {
     try {
-      const response = await api.post('/blockchain/issue-id');
+      // Default to current user's ID and 1-year expiry if not provided
+      const defaultData: DigitalIDRequest = {
+        userId: localStorage.getItem('user-id') || '12345',
+        idData: 'hashed-passport-or-aadhaar',
+        expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+
+      const requestData = { ...defaultData, ...data };
+      const response = await api.post('/blockchain/issue-id', requestData);
       return response.data;
     } catch (error) {
       throw error;
