@@ -8,16 +8,8 @@
     <meta name="author" content="Government of India - Ministry of Tourism" />
     <meta name="keywords" content="tourist safety, emergency response, India travel, GPS tracking, panic button, travel security" />
     
-    <!-- PWA Configuration -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#4285f4" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Tourist Safety" />
-    
-    <!-- Icons -->
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.ico" />
     
     <!-- Open Graph -->
     <meta property="og:title" content="Smart Tourist Safety System" />
@@ -37,22 +29,6 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-              if (registration.waiting) {
-                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-              }
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
-      }
-    </script>
+    <!-- Service worker and PWA registration removed for development to ensure hot reload works -->
   </body>
 </html>

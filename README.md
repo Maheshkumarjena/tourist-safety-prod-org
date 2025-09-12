@@ -90,6 +90,8 @@ The Smart Tourist Safety System is a technology-driven solution developed to enh
 5. **Open in Browser**
    Navigate to `http://localhost:3000`
 
+> Note: PWA features (service worker, manifest) are disabled during local development in this repository to avoid aggressive caching which can prevent changes from appearing. Enable PWA in production builds only.
+
 ## 📱 PWA Features
 
 ### Installation

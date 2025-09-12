@@ -7,7 +7,7 @@ const nextConfig = {
     domains: ['localhost', 'api.example.com'],
     dangerouslyAllowSVG: true,
   },
-  // PWA configuration will be added via next-pwa wrapper
+  // Note: PWA features are intentionally disabled in development to avoid caching issues
 }
 
 module.exports = nextConfig

@@ -2,8 +2,8 @@ console.log('Loading api.ts file...');
 import axios from 'axios';
 console.log('Axios imported successfully');
 
-// API base configuration - hardcoded to break cache
-const API_BASE_URL = 'http://localhost:3001';
+// API base configuration - use localhost:3000 as provided
+const API_BASE_URL = 'http://localhost:3000';
 
 console.log('API loaded successfully, base URL:', API_BASE_URL);
 
@@ -50,18 +50,8 @@ export const authAPI = {
       const response = await api.post('/auth/login', { email, password });
       return response.data;
     } catch (error) {
-      // Mock successful login for demo
-      return {
-        user: {
-          id: '1',
-          email,
-          firstName: 'Demo',
-          lastName: 'User',
-          phoneNumber: '+91 9876543210',
-          role: email.includes('authority') ? 'authority' : 'tourist',
-        },
-        token: 'mock-jwt-token-' + Date.now(),
-      };
+      // Bubble up real errors to the caller so failures can be handled centrally
+      throw error;
     }
   },
 
@@ -70,25 +60,17 @@ export const authAPI = {
       const response = await api.post('/auth/register', userData);
       return response.data;
     } catch (error) {
-      // Mock successful registration
-      return {
-        user: {
-          id: 'new-user-' + Date.now(),
-          ...userData,
-          role: 'tourist',
-        },
-        token: 'mock-jwt-token-' + Date.now(),
-      };
+      throw error;
     }
   },
 
-  verifyOTP: async (email: string, otp: string) => {
+  // Admin registration (secure)
+  adminRegister: async (adminData: any) => {
     try {
-      const response = await api.post('/auth/verify-otp', { email, otp });
+      const response = await api.post('/admin/register', adminData);
       return response.data;
     } catch (error) {
-      // Mock successful verification
-      return { success: true };
+      throw error;
     }
   },
 };
@@ -99,24 +81,17 @@ export const userAPI = {
       const response = await api.get('/user/profile');
       return response.data;
     } catch (error) {
-      // Mock profile data
-      return {
-        id: '1',
-        email: 'demo@example.com',
-        firstName: 'Demo',
-        lastName: 'User',
-        isKYCVerified: true,
-        safetyScore: 85,
-      };
+      throw error;
     }
   },
 
+  // Per spec the app uses POST for updating profile
   updateProfile: async (profileData: any) => {
     try {
-      const response = await api.put('/user/profile', profileData);
+      const response = await api.post('/user/profile', profileData);
       return response.data;
     } catch (error) {
-      return { success: true, data: profileData };
+      throw error;
     }
   },
 
@@ -127,7 +102,7 @@ export const userAPI = {
       });
       return response.data;
     } catch (error) {
-      return { success: true, message: 'KYC documents uploaded successfully' };
+      throw error;
     }
   },
 
@@ -136,16 +111,7 @@ export const userAPI = {
       const response = await api.get('/user/current-trip');
       return response.data;
     } catch (error) {
-      // Mock current trip data
-      return {
-        trip: {
-          id: 'trip-' + Date.now(),
-          destination: 'Guwahati, Assam',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'active'
-        }
-      };
+      throw error;
     }
   },
 
@@ -154,13 +120,7 @@ export const userAPI = {
       const response = await api.get('/user/emergency-contacts');
       return response.data;
     } catch (error) {
-      // Mock emergency contacts
-      return {
-        contacts: [
-          { name: 'John Doe', phoneNumber: '+91 9876543210', relationship: 'Family' },
-          { name: 'Jane Smith', phoneNumber: '+91 9876543211', relationship: 'Friend' }
-        ]
-      };
+      throw error;
     }
   },
 
@@ -169,7 +129,7 @@ export const userAPI = {
       const response = await api.post('/user/emergency-contacts', { contacts });
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Emergency contacts updated' };
+      throw error;
     }
   },
 
@@ -178,7 +138,7 @@ export const userAPI = {
       const response = await api.post('/user/settings', { settings });
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Settings updated' };
+      throw error;
     }
   },
 };
@@ -195,7 +155,7 @@ export const locationAPI = {
       const response = await api.post('/location/ping', locationData);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Location ping recorded' };
+      throw error;
     }
   },
 
@@ -208,14 +168,7 @@ export const locationAPI = {
       const response = await api.get(`/location/history?${params.toString()}`);
       return response.data;
     } catch (error) {
-      // Mock location history
-      return {
-        locations: [
-          { latitude: 26.1445, longitude: 91.7362, timestamp: new Date(Date.now() - 3600000).toISOString(), accuracy: 10 },
-          { latitude: 26.1465, longitude: 91.7382, timestamp: new Date(Date.now() - 1800000).toISOString(), accuracy: 8 },
-          { latitude: 26.1485, longitude: 91.7402, timestamp: new Date().toISOString(), accuracy: 12 },
-        ]
-      };
+      throw error;
     }
   },
 
@@ -224,25 +177,7 @@ export const locationAPI = {
       const response = await api.get(`/location/check?lat=${lat}&lng=${lng}`);
       return response.data;
     } catch (error) {
-      // Mock geo-fencing check
-      const safetyZones = [
-        { lat: 26.1445, lng: 91.7362, radius: 1000, type: 'safe' },
-        { lat: 26.1665, lng: 91.7582, radius: 500, type: 'restricted' }
-      ];
-      
-      // Simple distance check
-      const isInRestrictedZone = safetyZones.some(zone => {
-        const distance = Math.sqrt(Math.pow(lat - zone.lat, 2) + Math.pow(lng - zone.lng, 2)) * 111000; // Rough conversion to meters
-        return distance < zone.radius && zone.type === 'restricted';
-      });
-
-      return {
-        isSafe: !isInRestrictedZone,
-        zoneType: isInRestrictedZone ? 'restricted' : 'safe',
-        message: isInRestrictedZone 
-          ? 'Warning: You are in a restricted area' 
-          : 'You are in a safe zone'
-      };
+      throw error;
     }
   },
 };
@@ -253,11 +188,7 @@ export const alertAPI = {
       const response = await api.post('/alerts/panic', alertData);
       return response.data;
     } catch (error) {
-      return { 
-        success: true, 
-        alertId: 'panic-' + Date.now(),
-        message: 'Emergency alert sent successfully'
-      };
+      throw error;
     }
   },
 
@@ -266,27 +197,7 @@ export const alertAPI = {
       const response = await api.get('/alerts/history');
       return response.data;
     } catch (error) {
-      // Mock alerts
-      return {
-        alerts: [
-          {
-            id: 'alert-1',
-            type: 'advisory',
-            severity: 'medium',
-            message: 'Weather advisory: Heavy rain expected in Guwahati area',
-            timestamp: Date.now() - 7200000,
-            isRead: false,
-          },
-          {
-            id: 'alert-2', 
-            type: 'geo_fence',
-            severity: 'high',
-            message: 'You are approaching a restricted area',
-            timestamp: Date.now() - 3600000,
-            isRead: true,
-          },
-        ]
-      };
+      throw error;
     }
   },
 };
@@ -297,11 +208,7 @@ export const blockchainAPI = {
       const response = await api.post('/blockchain/issue-id');
       return response.data;
     } catch (error) {
-      // Mock QR code data
-      return {
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-        digitalId: 'DTID-' + Date.now(),
-      };
+      throw error;
     }
   },
 
@@ -310,9 +217,7 @@ export const blockchainAPI = {
       const response = await api.get(`/blockchain/qr/${digitalId}`);
       return response.data;
     } catch (error) {
-      return {
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-      };
+      throw error;
     }
   },
 };
@@ -330,11 +235,7 @@ export const mediaAPI = {
       });
       return response.data;
     } catch (error) {
-      // Mock successful upload
-      return {
-        mediaUrl: 'https://example.com/media/' + Date.now(),
-        filename: 'uploaded-file-' + Date.now()
-      };
+      throw error;
     }
   },
 
@@ -343,7 +244,7 @@ export const mediaAPI = {
       const response = await api.get(`/media/${filename}`);
       return response.data;
     } catch (error) {
-      return { error: 'File not found' };
+      throw error;
     }
   },
 
@@ -352,7 +253,7 @@ export const mediaAPI = {
       const response = await api.delete(`/media/${filename}`);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Media deleted' };
+      throw error;
     }
   },
 };
@@ -363,28 +264,7 @@ export const notificationAPI = {
       const response = await api.get(`/notifications?limit=${limit}&page=${page}`);
       return response.data;
     } catch (error) {
-      // Mock notifications
-      return {
-        notifications: [
-          {
-            id: 'notif-1',
-            title: 'Weather Advisory',
-            message: 'Heavy rainfall expected in your area. Exercise caution.',
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            isRead: false
-          },
-          {
-            id: 'notif-2',
-            title: 'Safety Update',
-            message: 'Your safety score has been updated to 85%.',
-            timestamp: new Date(Date.now() - 7200000).toISOString(),
-            isRead: true
-          }
-        ],
-        total: 2,
-        page: 1,
-        limit: 10
-      };
+      throw error;
     }
   },
 
@@ -393,7 +273,7 @@ export const notificationAPI = {
       const response = await api.post(`/notifications/${notificationId}/read`);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Notification marked as read' };
+      throw error;
     }
   },
 
@@ -402,7 +282,7 @@ export const notificationAPI = {
       const response = await api.post('/notifications/read-all');
       return response.data;
     } catch (error) {
-      return { success: true, message: 'All notifications marked as read' };
+      throw error;
     }
   },
 };
@@ -413,27 +293,7 @@ export const consentAPI = {
       const response = await api.get('/consent/history');
       return response.data;
     } catch (error) {
-      // Mock consent history
-      return {
-        consents: [
-          {
-            type: 'location',
-            granted: true,
-            purpose: 'Real-time safety monitoring',
-            version: '1.0',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            type: 'notifications',
-            granted: true,
-            purpose: 'Emergency alerts and updates',
-            version: '1.0',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        ]
-      };
+      throw error;
     }
   },
 
@@ -448,7 +308,7 @@ export const consentAPI = {
       const response = await api.post('/consent/record', consentData);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Consent recorded' };
+      throw error;
     }
   },
 
@@ -461,7 +321,7 @@ export const consentAPI = {
       const response = await api.post('/consent/revoke', consentData);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Consent revoked' };
+      throw error;
     }
   },
 };
@@ -472,11 +332,7 @@ export const offlineAPI = {
       const response = await api.get('/offline/status');
       return response.data;
     } catch (error) {
-      // Mock offline status
-      return {
-        queuedRequests: 0,
-        lastSync: new Date().toISOString()
-      };
+      throw error;
     }
   },
 
@@ -489,7 +345,7 @@ export const offlineAPI = {
       const response = await api.post('/offline/process', requests);
       return response.data;
     } catch (error) {
-      return { success: true, message: 'Offline requests processed' };
+      throw error;
     }
   },
 };
@@ -500,7 +356,7 @@ export const healthAPI = {
       const response = await api.get('/health');
       return response.data;
     } catch (error) {
-      return { status: 'healthy' };
+      throw error;
     }
   },
 };

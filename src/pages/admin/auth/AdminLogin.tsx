@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore, User } from '@/lib/store';
 import { toast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
@@ -27,25 +28,15 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      // Mock admin login - replace with actual API call
-      if (credentials.email === 'admin@tourism.gov' && credentials.password === 'admin123') {
-        const adminUser: User = {
-          id: 'admin-1',
-          email: credentials.email,
-          role: 'admin',
-          isKYCVerified: true,
-          safetyScore: 100
-        };
-        
-        adminLogin(adminUser, 'admin-token-123');
-        
-        toast({
-          title: "Login Successful",
-          description: "Welcome to the Admin Dashboard",
-        });
+      const res = await api.post('/admin/login', { email: credentials.email, password: credentials.password });
+      const data = res.data;
+      // Expecting { user, token }
+      if (data?.user && data?.token) {
+        adminLogin(data.user as User, data.token as string);
+        toast({ title: 'Login Successful', description: 'Welcome to the Admin Dashboard' });
         navigate('/admin/dashboard');
       } else {
-        setError('Invalid credentials. Please check your email and password.');
+        setError('Invalid server response.');
       }
     } catch (err) {
       setError('Login failed. Please try again.');

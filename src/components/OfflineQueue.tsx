@@ -15,8 +15,7 @@ import {
   AlertCircle,
   Database
 } from 'lucide-react';
-// import { offlineAPI } from '@/lib/api';
-// Temporarily disabled to isolate error
+import { offlineAPI } from '@/lib/api';
 
 interface QueuedRequest {
   id: string;
@@ -38,32 +37,39 @@ export const OfflineQueue = ({ isOnline }: OfflineQueueProps) => {
   const [syncProgress, setSyncProgress] = useState(0);
   const { toast } = useToast();
 
-  // Mock queued requests for demo
+  // Load queued requests from offline API when offline
   useEffect(() => {
-    if (!isOnline) {
-      // Simulate adding requests to queue when offline
-      const mockRequests: QueuedRequest[] = [
-        {
-          id: 'req-1',
-          endpoint: '/location/ping',
-          method: 'POST',
-          data: { latitude: 26.1445, longitude: 91.7362 },
-          timestamp: Date.now() - 30000,
-          retries: 0,
-          status: 'pending'
-        },
-        {
-          id: 'req-2',
-          endpoint: '/alerts/panic',
-          method: 'POST',
-          data: { message: 'Emergency alert', coordinates: { lat: 26.1445, lng: 91.7362 } },
-          timestamp: Date.now() - 60000,
-          retries: 1,
-          status: 'pending'
+    let cancelled = false;
+    const loadStatus = async () => {
+      if (!isOnline) {
+        // Attempt to read queued requests from server/local store via API
+        try {
+          const status = await offlineAPI.getOfflineStatus();
+          // Expecting { queuedRequests: number, lastSync: string } or a list - normalize
+          if (!cancelled) {
+            // If API returns a list of requests, use it; otherwise keep empty placeholder
+            const requests: QueuedRequest[] = Array.isArray((status as any).requests)
+              ? (status as any).requests
+              : [];
+            setQueuedRequests(requests.map((r: any, idx: number) => ({
+              id: r.id || `req-${idx}`,
+              endpoint: r.endpoint || r.url || '/unknown',
+              method: r.method || 'POST',
+              data: r.data,
+              timestamp: r.timestamp || Date.now(),
+              retries: r.retries || 0,
+              status: r.status || 'pending'
+            })));
+          }
+        } catch (error) {
+          // Ignore - keep queue empty
         }
-      ];
-      setQueuedRequests(mockRequests);
-    }
+      }
+    };
+
+    loadStatus();
+
+    return () => { cancelled = true; };
   }, [isOnline]);
 
   const syncQueuedRequests = async () => {
@@ -74,57 +80,26 @@ export const OfflineQueue = ({ isOnline }: OfflineQueueProps) => {
 
     try {
       const pendingRequests = queuedRequests.filter(req => req.status === 'pending');
-      
-      for (let i = 0; i < pendingRequests.length; i++) {
-        const request = pendingRequests[i];
-        
-        // Update status to syncing
-        setQueuedRequests(prev => 
-          prev.map(req => 
-            req.id === request.id ? { ...req, status: 'syncing' } : req
-          )
-        );
+      if (pendingRequests.length === 0) return;
 
-        try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Mark as synced
-          setQueuedRequests(prev => 
-            prev.map(req => 
-              req.id === request.id ? { ...req, status: 'synced' } : req
-            )
-          );
+      // Send requests to offline API for processing
+      const res = await offlineAPI.processOfflineRequests(pendingRequests.map(r => ({
+        endpoint: r.endpoint,
+        method: r.method as any,
+        data: r.data,
+      })));
 
-          setSyncProgress(((i + 1) / pendingRequests.length) * 100);
-        } catch (error) {
-          // Mark as failed and increment retries
-          setQueuedRequests(prev => 
-            prev.map(req => 
-              req.id === request.id 
-                ? { ...req, status: 'failed', retries: req.retries + 1 } 
-                : req
-            )
-          );
-        }
-      }
+      // Expectation: res contains processed count or per-request results
+      // For now, mark all as synced on success
+      setQueuedRequests(prev => prev.map(req => ({ ...req, status: 'synced' })));
 
-      // Remove synced requests after a delay
-      setTimeout(() => {
-        setQueuedRequests(prev => prev.filter(req => req.status !== 'synced'));
-      }, 2000);
+      setSyncProgress(100);
+      toast({ title: 'Sync completed', description: `${pendingRequests.length} requests processed` });
 
-      toast({
-        title: "Sync completed",
-        description: `${pendingRequests.length} requests processed`,
-      });
-
+      // Clear synced requests after short delay
+      setTimeout(() => setQueuedRequests([]), 1500);
     } catch (error) {
-      toast({
-        title: "Sync failed",
-        description: "Please try again",
-        variant: "destructive",
-      });
+      toast({ title: 'Sync failed', description: 'Please try again', variant: 'destructive' });
     } finally {
       setIsSyncing(false);
       setSyncProgress(0);

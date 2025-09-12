@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore, useLocationStore, useAlertStore, useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/translations';
 import { PanicButton } from '@/components/ui/panic-button';
+import { userAPI, alertAPI, notificationAPI, blockchainAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,21 +38,64 @@ const Dashboard = () => {
   const { t } = useTranslation(language);
   
   const [safetyScore, setSafetyScore] = useState(85);
-  const [digitalId] = useState('DTID-' + Date.now().toString().slice(-8));
+  const [digitalId, setDigitalId] = useState<string | null>(null);
+  const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
+  const [notificationsCount, setNotificationsCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAuthority = user?.role === 'authority';
 
-  // Mock real-time updates
+  // Load real data from backend on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate safety score changes
-      setSafetyScore(prev => {
-        const change = Math.random() * 6 - 3; // -3 to +3
-        return Math.min(100, Math.max(60, prev + change));
-      });
-    }, 10000);
+    let mounted = true;
 
-    return () => clearInterval(interval);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // Profile (includes safetyScore and currentTrip)
+        const profile = await userAPI.getProfile();
+        if (!mounted) return;
+        if (profile?.safetyScore) setSafetyScore(profile.safetyScore);
+
+        // Alerts
+        try {
+          const alertsRes = await alertAPI.getAlerts();
+          if (!mounted) return;
+          // support array or { alerts }
+          const alertsList = Array.isArray(alertsRes) ? alertsRes : alertsRes?.alerts || [];
+          setRecentAlerts(alertsList.slice(0, 10));
+        } catch (err) {
+          // ignore alerts error, keep empty
+        }
+
+        // Notifications (for count)
+        try {
+          const notRes = await notificationAPI.getNotifications(10, 1);
+          if (!mounted) return;
+          setNotificationsCount(notRes?.total || (Array.isArray(notRes?.notifications) ? notRes.notifications.length : 0));
+        } catch (err) {
+          // ignore
+        }
+
+        // Blockchain digital ID (attempt to fetch or issue)
+        try {
+          // If backend provides a get QR endpoint for the user, prefer that. Otherwise, issue a digital ID.
+          const bc = await blockchainAPI.issueDigitalID();
+          if (!mounted) return;
+          setDigitalId(bc?.digitalId || null);
+        } catch (err) {
+          // ignore blockchain errors
+        }
+      } catch (err) {
+        // top-level load error - keep UI functional
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => { mounted = false; };
   }, []);
 
   const handleLocationToggle = (enabled: boolean) => {
@@ -141,24 +185,22 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { id: 1, type: 'Panic', tourist: 'John Doe', location: 'Guwahati Central', time: '2 mins ago', severity: 'critical' },
-                  { id: 2, type: 'Geo-fence', tourist: 'Sarah Wilson', location: 'Restricted Area', time: '15 mins ago', severity: 'high' },
-                  { id: 3, type: 'Safety', tourist: 'Mike Chen', location: 'Tourism Zone', time: '1 hour ago', severity: 'medium' },
-                ].map((alert) => (
+                {recentAlerts.length > 0 ? recentAlerts.map((alert: any) => (
                   <div key={alert.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
                         {alert.type}
                       </Badge>
                       <div>
-                        <p className="font-medium text-sm">{alert.tourist}</p>
-                        <p className="text-xs text-muted-foreground">{alert.location} • {alert.time}</p>
+                        <p className="font-medium text-sm">{alert.tourist || alert.userName || alert.reportedBy}</p>
+                        <p className="text-xs text-muted-foreground">{alert.location?.name || alert.location || ''} • {new Date(alert.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </div>
                     <Button size="sm">Respond</Button>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-muted-foreground p-4">No recent alerts</div>
+                )}
               </div>
             </CardContent>
           </Card>

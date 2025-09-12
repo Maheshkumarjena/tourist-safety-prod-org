@@ -1,5 +1,46 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authAPI } from './api';
+
+// Debug log helpers: persist recent login responses to localStorage so logs
+// remain visible in the browser console even after navigation. Each log
+// entry expires after a short TTL and is removed via setTimeout.
+const DEBUG_LOG_KEY = 'auth-debug-logs';
+const DEBUG_LOG_TTL_MS = 30_000; // 30 seconds default
+
+function readDebugLogs(): Array<{ ts: number; msg: string; data?: any; expiresAt: number }> {
+  try {
+    const raw = localStorage.getItem(DEBUG_LOG_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeDebugLogs(logs: Array<{ ts: number; msg: string; data?: any; expiresAt: number }>) {
+  try {
+    localStorage.setItem(DEBUG_LOG_KEY, JSON.stringify(logs));
+  } catch (e) {
+    // ignore quota errors during debugging
+  }
+}
+
+function addDebugLog(msg: string, data?: any, ttl = DEBUG_LOG_TTL_MS) {
+  const logs = readDebugLogs();
+  const now = Date.now();
+  const entry = { ts: now, msg, data, expiresAt: now + ttl };
+  const next = [entry, ...logs].slice(0, 20); // keep last 20
+  writeDebugLogs(next);
+
+  // Schedule removal after ttl so log list self-cleans even across route changes
+  setTimeout(() => {
+    try {
+      const current = readDebugLogs().filter(l => l.expiresAt > Date.now());
+      writeDebugLogs(current);
+    } catch (e) {}
+  }, ttl + 50);
+}
 
 // User types
 export interface User {
@@ -104,42 +145,32 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          // Mock login - replace with actual API call
-          const mockUser: User = {
-            id: '1',
-            email,
-            firstName: 'John',
-            lastName: 'Doe',
-            phoneNumber: '+91 9876543210',
-            role: email.includes('authority') ? 'authority' : 'tourist',
-            isKYCVerified: true,
-            safetyScore: 85,
-            currentTrip: {
-              id: 'trip-1',
-              destination: 'Guwahati, Assam',
-              startDate: '2025-09-07',
-              endDate: '2025-09-14',
-              status: 'active'
-            }
-          };
-          
-          const mockToken = 'mock-jwt-token-' + Date.now();
-          
-          set({ 
-            user: mockUser, 
-            token: mockToken, 
-            isAuthenticated: true, 
-            isLoading: false 
-          });
+          const res = await authAPI.login(email, password);
+          // Debug: persist the full response (sanitized) so we can inspect it
+          try {
+            // Console log for immediate dev visibility
+            // eslint-disable-next-line no-console
+            console.log('auth.login response:', res);
+          } catch (e) {}
+          // Persist a sanitized copy with TTL so it survives route changes
+          try { addDebugLog('auth.login response', { status: (res && (res.status || 'unknown')), body: (res && (res.data || res.user || res)) }); } catch (e) {}
+          // Support multiple token field names returned by backend
+          const user = res.user ?? res.data?.user ?? null;
+          const token = res.token ?? res.accessToken ?? res.access_token ?? res.data?.token ?? res.data?.accessToken ?? res.data?.access_token ?? null;
+
+          // Persist token for api interceptor
+          if (token) {
+            try { localStorage.setItem('auth-token', token); } catch {}
+          }
+
+          set({ user, token, isAuthenticated: !!token, isLoading: false });
         } catch (error) {
           set({ isLoading: false });
           throw error;
         }
       },
 
-      logout: () => {
-        set({ user: null, token: null, isAuthenticated: false });
-      },
+      // logout will be defined later to clear storage as well
 
       updateUser: (userData: Partial<User>) => {
         const { user } = get();
@@ -149,11 +180,25 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setToken: (token: string) => {
-        set({ token, isAuthenticated: true });
+        if (token) {
+          try { localStorage.setItem('auth-token', token); } catch {}
+        } else {
+          try { localStorage.removeItem('auth-token'); } catch {}
+        }
+        set({ token, isAuthenticated: !!token });
       },
 
       adminLogin: (user: User, token: string) => {
-        set({ user, token, isAuthenticated: true });
+        if (token) {
+          try { localStorage.setItem('auth-token', token); } catch {}
+        }
+        set({ user, token, isAuthenticated: !!token });
+      },
+
+      logout: () => {
+        // override to ensure token is cleared from localStorage as well
+        try { localStorage.removeItem('auth-token'); } catch {}
+        set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {

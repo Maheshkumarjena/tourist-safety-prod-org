@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/lib/store';
 import { useTranslation } from '@/lib/translations';
+import { authAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -75,11 +76,19 @@ const Register = () => {
   const onSubmit = async (data: RegisterForm) => {
     try {
       setError('');
-      
-      // Mock registration - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-      
-      // Auto-login after registration
+      // Call real registration endpoint
+      // authAPI.register will be used via the store's login for subsequent login
+      await authAPI.register({
+        email: data.email,
+        password: data.password,
+        phoneNumber: data.phoneNumber,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth,
+        nationality: data.nationality,
+      });
+
+      // Auto-login after successful registration
       await login(data.email, data.password);
       navigate('/dashboard');
     } catch (err) {

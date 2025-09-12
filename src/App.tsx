@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { PWAInstaller, PWAInstallSuccess } from "@/components/PWAInstaller";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -62,9 +61,7 @@ function AppContent() {
     <>
       <Toaster />
       <Sonner />
-      <OfflineIndicator />
-      <PWAInstaller />
-      <PWAInstallSuccess />
+  <OfflineIndicator />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth/consent" element={<ConsentScreen />} />

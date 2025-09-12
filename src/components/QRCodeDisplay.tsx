@@ -17,12 +17,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
-// import { blockchainAPI } from '@/lib/api';
-// Temporarily disabled to isolate error
-const blockchainAPI = {
-  issueDigitalID: async () => ({ digitalId: 'test', qrCode: 'test' }),
-  getQRCode: async (id: string) => ({ qrCode: 'test' })
-};
+import { blockchainAPI } from '@/lib/api';
 
 interface DigitalIDData {
   id: string;

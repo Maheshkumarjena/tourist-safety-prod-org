@@ -31,10 +31,7 @@ export const translations = {
       forgotPassword: 'Forgot Password?',
       loginButton: 'Sign In',
       registerButton: 'Create Account',
-      otpVerification: 'OTP Verification',
-      enterOTP: 'Enter verification code',
-      resendOTP: 'Resend OTP',
-      verifyOTP: 'Verify',
+  // OTP keys removed (OTP verification removed from auth flow)
     },
     dashboard: {
       welcome: 'Welcome',
@@ -112,10 +109,7 @@ export const translations = {
       forgotPassword: 'पासवर्ड भूल गए?',
       loginButton: 'साइन इन',
       registerButton: 'खाता बनाएं',
-      otpVerification: 'ओटीपी सत्यापन',
-      enterOTP: 'सत्यापन कोड दर्ज करें',
-      resendOTP: 'ओटीपी पुनः भेजें',
-      verifyOTP: 'सत्यापित करें',
+  // OTP keys removed (ओटीपी सत्यापन हटाया गया)
     },
     dashboard: {
       welcome: 'स्वागत है',
