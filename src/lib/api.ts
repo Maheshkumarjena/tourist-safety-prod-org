@@ -115,6 +115,15 @@ export const userAPI = {
     }
   },
 
+  getSafetyScore: async () => {
+    try {
+      const response = await api.get('/user/safety-score');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getEmergencyContacts: async () => {
     try {
       const response = await api.get('/user/emergency-contacts');

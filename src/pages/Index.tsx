@@ -146,7 +146,7 @@ const Index = () => {
               <Link to="/admin/auth/login">
                 <Button variant="secondary" className="w-full sm:w-auto">
                   <Shield className="w-4 h-4 mr-2" />
-                  Amaresh Swain
+                  Authority Portal
                 </Button>
               </Link>
             </div>

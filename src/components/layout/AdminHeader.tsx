@@ -127,7 +127,7 @@ export const AdminHeader: React.FC = () => {
               <SheetHeader>
                 <SheetTitle className="flex items-center space-x-2">
                   <Shield className="h-5 w-5 text-primary" />
-                  <span>Amaresh Swain</span>
+                  <span>Authority Portal</span>
                 </SheetTitle>
               </SheetHeader>
               <nav className="mt-6 space-y-2">

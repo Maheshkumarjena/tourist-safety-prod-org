@@ -5,7 +5,9 @@ import { motion } from 'framer-motion';
 import { useAuthStore, useLocationStore, useAlertStore, useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/translations';
 import { PanicButton } from '@/components/ui/panic-button';
+import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { userAPI, alertAPI, notificationAPI, blockchainAPI } from '@/lib/api';
+import { reverseGeocode } from '@/lib/geocode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +48,9 @@ const Dashboard = () => {
   const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
   const [notificationsCount, setNotificationsCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationName, setLocationName] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<number | null>(null);
+  const system = useSystemStatus();
   // Emergency UI state
   const [isContactsOpen, setIsContactsOpen] = useState(false);
   const [contactForm, setContactForm] = useState<{ id?: string; name: string; phone: string; relationship?: string }>({ name: '', phone: '', relationship: '' });
@@ -71,6 +76,14 @@ const Dashboard = () => {
         const profile = await userAPI.getProfile();
         if (!mounted) return;
         if (profile?.safetyScore) setSafetyScore(profile.safetyScore);
+        // Try to fetch a live safety score separately if backend exposes it
+        try {
+          const scoreRes = await userAPI.getSafetyScore();
+          if (!mounted) return;
+          if (typeof scoreRes?.safetyScore === 'number') { setSafetyScore(scoreRes.safetyScore); setLastSync(Date.now()); }
+        } catch (e) {
+          // ignore safety score fetch errors, keep profile value
+        }
 
         // Alerts
         try {
@@ -117,9 +130,19 @@ const Dashboard = () => {
       }
     };
 
-    loadData();
+  loadData();
+  // Poll safety score every 60 seconds while the dashboard is mounted
+  const pollId = setInterval(async () => {
+      try {
+        const scoreRes = await userAPI.getSafetyScore();
+        if (!mounted) return;
+        if (typeof scoreRes?.safetyScore === 'number') { setSafetyScore(scoreRes.safetyScore); setLastSync(Date.now()); }
+      } catch (e) {
+        // ignore periodic errors
+      }
+    }, 60_000);
 
-    return () => { mounted = false; };
+    return () => { mounted = false; clearInterval(pollId); };
   }, []);
 
   const handleLocationToggle = (enabled: boolean) => {
@@ -130,6 +153,26 @@ const Dashboard = () => {
       stopTracking();
     }
   };
+
+  // When currentLocation updates, look up a human-readable name (debounced)
+  useEffect(() => {
+    if (!currentLocation) {
+      setLocationName(null);
+      return;
+    }
+
+    let mounted = true;
+    const id = setTimeout(async () => {
+      try {
+        const name = await reverseGeocode(currentLocation.lat, currentLocation.lng);
+        if (mounted) setLocationName(name);
+      } catch (e) {
+        // keep previous name or null
+      }
+    }, 600); // debounce 600ms
+
+    return () => { mounted = false; clearTimeout(id); };
+  }, [currentLocation]);
 
   const getSafetyStatus = (score: number) => {
     if (score >= 90) return { text: 'Excellent', color: 'status-safe', icon: CheckCircle };
@@ -439,6 +482,9 @@ const Dashboard = () => {
                   <div>Lat: {currentLocation.lat.toFixed(6)}</div>
                   <div>Lng: {currentLocation.lng.toFixed(6)}</div>
                   <div>Updated: {new Date(currentLocation.timestamp).toLocaleTimeString()}</div>
+                  {locationName && (
+                    <div className="text-sm text-foreground mt-1">{locationName}</div>
+                  )}
                 </div>
               ) : (
                 <div className="text-xs text-muted-foreground">
@@ -453,27 +499,37 @@ const Dashboard = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground">System Status</h3>
-                {isOnline ? (
-                  <Wifi className="w-5 h-5 text-success" />
-                ) : (
-                  <WifiOff className="w-5 h-5 text-destructive" />
-                )}
+                  {system.isOnline ? (
+                    <Wifi className="w-5 h-5 text-success" />
+                  ) : (
+                    <WifiOff className="w-5 h-5 text-destructive" />
+                  )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Connection:</span>
-                  <span className={isOnline ? 'text-success' : 'text-destructive'}>
-                    {isOnline ? 'Online' : 'Offline'}
-                  </span>
+                    <span className={system.isOnline ? 'text-success' : 'text-destructive'}>
+                      {system.isOnline ? `Online${system.effectiveType ? ' • ' + system.effectiveType : ''}` : 'Offline'}
+                    </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Battery:</span>
-                  <span className="text-success">89%</span>
+                    <span className={system.batteryLevel !== null && system.batteryLevel < 20 ? 'text-destructive' : 'text-success'}>
+                      {system.batteryLevel !== null ? `${system.batteryLevel}%${system.charging ? ' (charging)' : ''}` : 'Unknown'}
+                    </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Last Sync:</span>
-                  <span className="text-muted-foreground">Just now</span>
-                </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Last Sync:</span>
+                    <span className="text-muted-foreground">{lastSync ? new Date(lastSync).toLocaleTimeString() : '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Camera / Mic:</span>
+                    <span className="text-muted-foreground">{system.hasCamera ? 'Camera' : 'No Camera'} • {system.hasMicrophone ? 'Mic' : 'No Mic'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Permissions:</span>
+                    <span className="text-xs text-muted-foreground">Geo: {system.geolocationPermission} • Cam: {system.cameraPermission} • Mic: {system.microphonePermission}</span>
+                  </div>
               </div>
             </CardContent>
           </Card>
