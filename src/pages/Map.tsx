@@ -692,14 +692,14 @@ const MapPage = () => {
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        {/* <label className="text-sm font-medium">Dynamic Nearby Zones</label>
+                        <label className="text-sm font-medium hidden">Dynamic Nearby Zones</label>
                         <div className="flex items-center space-x-2">
                           <Switch checked={dynamicZonesEnabled} onCheckedChange={setDynamicZonesEnabled} />
                           <Button size="sm" variant="outline" onClick={() => {
                             const center = currentLocation ? [currentLocation.lat, currentLocation.lng] as [number, number] : mapCenter;
                             generateRandomZones(center, 7);
                           }}>Regenerate</Button>
-                        </div> */}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium">Safe Zones</label>

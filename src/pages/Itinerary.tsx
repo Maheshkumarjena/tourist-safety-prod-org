@@ -215,10 +215,10 @@ const Itinerary = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
+          className="space-y-2"
         >
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-start flex-col gap-2 justify-between">
             <div>
               <h1 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-3">
                 <Calendar className="w-6 h-6 md:w-8 md:h-8" />

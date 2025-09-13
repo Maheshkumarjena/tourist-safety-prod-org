@@ -72,6 +72,24 @@ export const OfflineQueue = ({ isOnline }: OfflineQueueProps) => {
     return () => { cancelled = true; };
   }, [isOnline]);
 
+  // Also read queued requests from localStorage as a fallback (e.g., client queued SOS)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('queued-requests');
+      if (raw) {
+        const localQueued = JSON.parse(raw) as QueuedRequest[];
+        // Merge local queued requests with any already loaded ones
+        setQueuedRequests(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const merged = [...localQueued.filter(q => !existingIds.has(q.id)), ...prev];
+          return merged;
+        });
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
+
   const syncQueuedRequests = async () => {
     if (!isOnline || queuedRequests.length === 0) return;
 
@@ -92,6 +110,18 @@ export const OfflineQueue = ({ isOnline }: OfflineQueueProps) => {
       // Expectation: res contains processed count or per-request results
       // For now, mark all as synced on success
       setQueuedRequests(prev => prev.map(req => ({ ...req, status: 'synced' })));
+
+      // Also clear localStorage queued-requests entries that were sent
+      try {
+        const raw = localStorage.getItem('queued-requests');
+        if (raw) {
+          const local = JSON.parse(raw) as QueuedRequest[];
+          // Remove those that match pendingRequests by id
+          const idsToRemove = new Set(pendingRequests.map(p => p.id));
+          const remaining = local.filter(l => !idsToRemove.has(l.id));
+          localStorage.setItem('queued-requests', JSON.stringify(remaining));
+        }
+      } catch (e) {}
 
       setSyncProgress(100);
       toast({ title: 'Sync completed', description: `${pendingRequests.length} requests processed` });

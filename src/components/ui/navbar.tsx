@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore, useAppStore } from '@/lib/store';
+import { useLogout } from '@/hooks/use-logout';
 import { useTranslation } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -72,8 +73,9 @@ export function Navbar({ className }: NavbarProps) {
     });
   }
 
+  const doLogout = useLogout();
   const handleLogout = () => {
-    logout();
+    doLogout();
     setIsMenuOpen(false);
   };
 

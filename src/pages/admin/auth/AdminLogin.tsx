@@ -28,18 +28,25 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const res = await api.post('/admin/login', { email: credentials.email, password: credentials.password });
-      const data = res.data;
-      // Expecting { user, token }
-      if (data?.user && data?.token) {
-        adminLogin(data.user as User, data.token as string);
-        toast({ title: 'Login Successful', description: 'Welcome to the Admin Dashboard' });
+      const response = await api.post('/api/v1/admin/login', {
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (response.ok) {
+        const { user, token } = response.data;
+        adminLogin(user, token);
+        toast({ 
+          title: 'Login Successful', 
+          description: `Welcome back, ${user.firstName}!`
+        });
         navigate('/admin/dashboard');
       } else {
-        setError('Invalid server response.');
+        setError(response.data?.message || 'Invalid credentials. Please try again.');
       }
-    } catch (err) {
-      setError('Login failed. Please try again.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }

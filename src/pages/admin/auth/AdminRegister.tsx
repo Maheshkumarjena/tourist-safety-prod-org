@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { authAPI } from '@/lib/api';
+import { api, authAPI } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 
 const AdminRegister = () => {
   const [step, setStep] = useState(1);
@@ -17,8 +18,11 @@ const AdminRegister = () => {
     password: '',
     confirmPassword: '',
     fullName: '',
+    firstName: '',
+    lastName: '',
     department: '',
-    badgeNumber: ''
+    badgeNumber: '',
+    adminCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,27 +30,46 @@ const AdminRegister = () => {
   
   const navigate = useNavigate();
 
-  const handleCodeVerification = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
+    if (adminData.password !== adminData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // Verify admin code via API if endpoint exists, otherwise fallback to the static code
-      // We'll attempt to call an endpoint /admin/verify-code if available. If not available, fallback.
-      try {
-        // If backend supports a verify endpoint it should be used here. For now, fallback to local code.
-        if (verificationCode === 'ADMIN2024') {
-          toast({ title: 'Code Verified', description: 'Please complete your registration' });
-          setStep(2);
-        } else {
-          setError('Invalid verification code. Please contact your administrator.');
-        }
-      } catch (err) {
-        setError('Verification failed. Please try again.');
+      const response = await api.post('/api/v1/admin/register', {
+        adminCode: adminData.adminCode,
+        email: adminData.email,
+        password: adminData.password,
+        firstName: adminData.firstName,
+        lastName: adminData.lastName,
+        department: adminData.department,
+        badgeNumber: adminData.badgeNumber
+      });
+
+      if (response.ok) {
+        const { user, token } = response.data;
+        // Log the user in automatically
+        localStorage.setItem('auth-token', token);
+        toast({ 
+          title: 'Registration Successful', 
+          description: 'Welcome to the Admin Dashboard'
+        });
+        navigate('/admin/dashboard');
+      } else {
+        setError(response.data?.message || 'Registration failed. Please try again.');
       }
-    } catch (err) {
-      setError('Verification failed. Please try again.');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(
+        err.response?.data?.message || 
+        'Registration failed. Please check your information and try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -64,24 +87,49 @@ const AdminRegister = () => {
     }
 
     try {
-      try {
-        await authAPI.adminRegister({
-          adminCode: 'ADMIN2024',
-          email: adminData.email,
-          password: adminData.password,
-          firstName: adminData.fullName.split(' ')[0] || adminData.fullName,
-          lastName: adminData.fullName.split(' ').slice(1).join(' ') || '',
-          department: adminData.department,
-          badgeNumber: adminData.badgeNumber,
-        });
+      await authAPI.adminRegister({
+        adminCode: 'ADMIN2024',
+        email: adminData.email,
+        password: adminData.password,
+        firstName: adminData.fullName.split(' ')[0] || adminData.fullName,
+        lastName: adminData.fullName.split(' ').slice(1).join(' ') || '',
+        department: adminData.department,
+        badgeNumber: adminData.badgeNumber,
+      });
 
-        toast({ title: 'Registration Successful', description: 'Your admin account has been created. Please login.' });
-        navigate('/admin/auth/login');
-      } catch (err) {
-        setError('Registration failed. Please try again.');
-      }
+      toast({ title: 'Registration Successful', description: 'Your admin account has been created. Please login.' });
+      navigate('/admin/auth/login');
     } catch (err) {
+      console.error('Admin registration error', err);
       setError('Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCodeVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Prefer server-side verification if endpoint exists
+      try {
+        const res = await api.post('/api/v1/admin/verify-code', { code: verificationCode });
+        // Assume server returns { valid: true } on success
+        if (res?.data?.valid || res.status === 200) {
+          setStep(2);
+          return;
+        }
+        setError('Invalid verification code');
+      } catch (err) {
+        // Fallback to local code check if server endpoint not available
+        if (verificationCode === 'ADMIN2024') {
+          setStep(2);
+        } else {
+          setError('Invalid verification code');
+        }
+      }
     } finally {
       setIsLoading(false);
     }

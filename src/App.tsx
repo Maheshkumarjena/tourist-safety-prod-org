@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from 'react';
 import { useAppStore, useAuthStore } from './lib/store';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -67,14 +68,14 @@ function AppContent() {
         <Route path="/auth/consent" element={<ConsentScreen />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/itinerary" element={<Itinerary />} />
-        <Route path="/panic" element={<PanicPage />} />
-        <Route path="/digital-id" element={<DigitalID />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/itinerary" element={<ProtectedRoute><Itinerary /></ProtectedRoute>} />
+        <Route path="/panic" element={<ProtectedRoute><PanicPage /></ProtectedRoute>} />
+        <Route path="/digital-id" element={<ProtectedRoute><DigitalID /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         {/* Admin Routes */}
         <Route path="/admin/auth/login" element={<AdminLogin />} />

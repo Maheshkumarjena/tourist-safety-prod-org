@@ -7,11 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore, useLocationStore, useAlertStore } from '@/lib/store';
 import { useTranslation } from '@/lib/translations';
-// import { alertAPI } from '@/lib/api';
-// Temporarily disabled to isolate error
-const alertAPI = {
-  sendPanicAlert: async (data: any) => ({ success: true, alertId: 'test' })
-};
+import { alertAPI } from '@/lib/api';
 import { 
   AlertTriangle, 
   Phone, 
@@ -80,29 +76,37 @@ export function PanicButton({ className, size = 'lg' }: PanicButtonProps) {
     setIsAlertSent(true);
     setIsActivated(false);
 
-    // Prepare alert data
-    const alertData = {
-      type: 'panic' as const,
-      severity: 'critical' as const,
-      message: `Emergency alert from ${user?.firstName} ${user?.lastName}`,
-      location: currentLocation,
-      userId: user?.id,
-      timestamp: Date.now(),
-      metadata: {
-        userPhone: user?.phoneNumber,
-        tripId: user?.currentTrip?.id,
-      }
-    };
-
-    try {
-      // Send to backend
-      await alertAPI.sendPanicAlert(alertData);
-      
-      // Add to local store
+    // Ensure we have a location; backend requires coordinates
+    if (!currentLocation || typeof currentLocation.lat !== 'number' || typeof currentLocation.lng !== 'number') {
+      // Inform user that location is unavailable
       addAlert({
         type: 'panic',
         severity: 'critical',
-        message: 'Emergency alert sent successfully',
+        message: 'Unable to send SOS: current location unavailable',
+        location: currentLocation || undefined,
+        isRead: false,
+      });
+      setIsAlertSent(false);
+      return;
+    }
+
+    // Prepare minimal payload expected by backend validation: coordinates object with exact keys
+    const alertData = {
+      coordinates: { latitude: currentLocation.lat, longitude: currentLocation.lng }
+    } as const;
+
+    try {
+      // Send to backend
+  const res = await alertAPI.sendPanicAlert(alertData);
+  const returnedAlert = res?.alert || res?.data || res;
+      // If backend returned an id, include it in local display
+      const backendAlertId = returnedAlert?.id || returnedAlert?.alertId || null;
+      
+      // Add to local store (include backend id when available)
+      addAlert({
+        type: 'panic',
+        severity: 'critical',
+        message: backendAlertId ? `Emergency alert sent (id: ${backendAlertId})` : 'Emergency alert sent successfully',
         location: currentLocation,
         isRead: false,
       });
@@ -121,6 +125,32 @@ export function PanicButton({ className, size = 'lg' }: PanicButtonProps) {
       }, 5000);
     } catch (error) {
       console.error('Failed to send emergency alert:', error);
+      // If offline or server error, queue the request in localStorage for later sync
+      try {
+        const queuedRaw = localStorage.getItem('queued-requests');
+        const queued = queuedRaw ? JSON.parse(queuedRaw) : [];
+        queued.unshift({
+          id: 'queued-' + Date.now(),
+          endpoint: '/alerts/panic',
+          method: 'POST',
+          data: alertData,
+          timestamp: Date.now(),
+          retries: 0,
+          status: 'pending'
+        });
+        localStorage.setItem('queued-requests', JSON.stringify(queued.slice(0, 200)));
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      // Also add a local alert to inform the user that the SOS was queued
+      addAlert({
+        type: 'panic',
+        severity: 'critical',
+        message: 'Emergency alert queued (no network). It will be sent when online.',
+        location: currentLocation,
+        isRead: false,
+      });
     }
   };
 

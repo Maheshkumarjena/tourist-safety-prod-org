@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 
 const Dashboard = () => {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const { currentLocation, isTracking, trackingConsent, startTracking, stopTracking, setTrackingConsent } = useLocationStore();
   const { alerts, unreadCount } = useAlertStore();
   const { isOnline, language } = useAppStore();
@@ -94,14 +94,19 @@ const Dashboard = () => {
 
         // Blockchain digital ID (attempt to fetch or issue)
         try {
-          // If backend provides a get QR endpoint for the user, prefer that. Otherwise, issue a digital ID.
-          const bc = await blockchainAPI.issueDigitalID({
-            userId: user?.id || '12345',
-            idData: user?.isKYCVerified ? 'verified-kyc-data' : 'pending-verification',
-            expiryDate: user?.currentTrip?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          });
-          if (!mounted) return;
-          setDigitalId(bc?.digitalId || null);
+          // If a token exists from login, prefer showing the token as the digital ID
+          if (token) {
+            setDigitalId(token);
+          } else {
+            // If backend provides a get QR endpoint for the user, prefer that. Otherwise, issue a digital ID.
+            const bc = await blockchainAPI.issueDigitalID({
+              userId: user?.id || '12345',
+              idData: user?.isKYCVerified ? 'verified-kyc-data' : 'pending-verification',
+              expiryDate: user?.currentTrip?.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            });
+            if (!mounted) return;
+            setDigitalId(bc?.digitalId || null);
+          }
         } catch (err) {
           // ignore blockchain errors
         }
@@ -569,7 +574,7 @@ const Dashboard = () => {
                 />
               </div>
               <div className="mt-3">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="w-[90%] whitespace-normal break-all text-xs text-left">
                   ID: {digitalId}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-1">
