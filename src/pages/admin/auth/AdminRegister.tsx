@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { api, authAPI } from '@/lib/api';
+// Backend API calls are mocked in this admin register page during development
 import { useAuthStore } from '@/lib/store';
 
 const AdminRegister = () => {
@@ -42,34 +42,23 @@ const AdminRegister = () => {
     }
 
     try {
-      const response = await api.post('/api/v1/admin/register', {
-        adminCode: adminData.adminCode,
+      // Mock registration - avoid calling backend during development
+      await new Promise((res) => setTimeout(res, 600));
+      // Optionally create a local placeholder user/token
+      const fakeToken = 'admin-mock-token-' + Date.now();
+      const fakeUser = {
+        id: 'admin-' + Date.now(),
         email: adminData.email,
-        password: adminData.password,
-        firstName: adminData.firstName,
-        lastName: adminData.lastName,
-        department: adminData.department,
-        badgeNumber: adminData.badgeNumber
-      });
-
-      if (response.ok) {
-        const { user, token } = response.data;
-        // Log the user in automatically
-        localStorage.setItem('auth-token', token);
-        toast({ 
-          title: 'Registration Successful', 
-          description: 'Welcome to the Admin Dashboard'
-        });
-        navigate('/admin/dashboard');
-      } else {
-        setError(response.data?.message || 'Registration failed. Please try again.');
-      }
+        firstName: adminData.fullName.split(' ')[0] || '',
+        lastName: adminData.fullName.split(' ').slice(1).join(' ') || '',
+        role: 'admin'
+      };
+      try { localStorage.setItem('auth-token', fakeToken); localStorage.setItem('admin-user', JSON.stringify(fakeUser)); } catch (e) {}
+      toast({ title: 'Registration (mock) Successful', description: 'Admin account created locally for testing. Please login.' });
+      navigate('/admin/auth/login');
     } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(
-        err.response?.data?.message || 
-        'Registration failed. Please check your information and try again.'
-      );
+      console.error('Registration mock error:', err);
+      setError('Registration failed. Please check your information and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -87,20 +76,23 @@ const AdminRegister = () => {
     }
 
     try {
-      await authAPI.adminRegister({
-        adminCode: 'ADMIN2024',
+      // Mock admin registration to avoid hitting real backend
+      await new Promise((res) => setTimeout(res, 600));
+      const fakeToken = 'admin-mock-token-' + Date.now();
+      const fakeUser = {
+        id: 'admin-' + Date.now(),
         email: adminData.email,
-        password: adminData.password,
-        firstName: adminData.fullName.split(' ')[0] || adminData.fullName,
+        firstName: adminData.fullName.split(' ')[0] || '',
         lastName: adminData.fullName.split(' ').slice(1).join(' ') || '',
         department: adminData.department,
         badgeNumber: adminData.badgeNumber,
-      });
-
-      toast({ title: 'Registration Successful', description: 'Your admin account has been created. Please login.' });
+        role: 'admin'
+      };
+      try { localStorage.setItem('auth-token', fakeToken); localStorage.setItem('admin-user', JSON.stringify(fakeUser)); } catch (e) {}
+      toast({ title: 'Registration (mock) Successful', description: 'Your admin account has been created locally. Please login.' });
       navigate('/admin/auth/login');
     } catch (err) {
-      console.error('Admin registration error', err);
+      console.error('Admin registration mock error', err);
       setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -113,22 +105,12 @@ const AdminRegister = () => {
     setError('');
 
     try {
-      // Prefer server-side verification if endpoint exists
-      try {
-        const res = await api.post('/api/v1/admin/verify-code', { code: verificationCode });
-        // Assume server returns { valid: true } on success
-        if (res?.data?.valid || res.status === 200) {
-          setStep(2);
-          return;
-        }
+      // Mock verification locally (avoid calling backend)
+      await new Promise((res) => setTimeout(res, 300));
+      if (verificationCode === 'ADMIN2024') {
+        setStep(2);
+      } else {
         setError('Invalid verification code');
-      } catch (err) {
-        // Fallback to local code check if server endpoint not available
-        if (verificationCode === 'ADMIN2024') {
-          setStep(2);
-        } else {
-          setError('Invalid verification code');
-        }
       }
     } finally {
       setIsLoading(false);

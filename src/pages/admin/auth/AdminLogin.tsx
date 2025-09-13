@@ -28,25 +28,32 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await api.post('/api/v1/admin/login', {
-        email: credentials.email,
-        password: credentials.password
-      });
+      // Static dev credentials - avoid hitting real backend
+      const DEV_EMAIL = 'amaresh7503@gmail.com';
+      const DEV_PASSWORD = 'mkj@1234';
 
-      if (response.ok) {
-        const { user, token } = response.data;
-        adminLogin(user, token);
-        toast({ 
-          title: 'Login Successful', 
-          description: `Welcome back, ${user.firstName}!`
-        });
+      if (credentials.email === DEV_EMAIL && credentials.password === DEV_PASSWORD) {
+        const fakeToken = 'admin-dev-token-' + Date.now();
+        const fakeUser: User = {
+          id: 'admin-dev',
+          email: DEV_EMAIL,
+          firstName: 'Mahesh',
+          lastName: 'Jena',
+          phoneNumber: '',
+          role: 'admin',
+          isKYCVerified: false,
+          safetyScore: 0
+        };
+        try { localStorage.setItem('auth-token', fakeToken); } catch (e) {}
+        adminLogin(fakeUser, fakeToken);
+        toast({ title: 'Login Successful', description: `Welcome back, ${fakeUser.firstName}!` });
         navigate('/admin/dashboard');
       } else {
-        setError(response.data?.message || 'Invalid credentials. Please try again.');
+        setError('Invalid credentials. Please try again.');
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Login failed. Please try again.');
-      console.error('Login error:', err);
+    } catch (err) {
+      console.error('Dev login error', err);
+      setError('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

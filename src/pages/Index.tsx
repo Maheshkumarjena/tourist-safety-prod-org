@@ -138,11 +138,11 @@ const Index = () => {
               </Link>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-              <Link to="/auth/consent">
+              {/* <Link to="/auth/consent">
                 <Button variant="outline" className="w-full sm:w-auto">
                   Register
                 </Button>
-              </Link>
+              </Link> */}
               <Link to="/admin/auth/login">
                 <Button variant="secondary" className="w-full sm:w-auto">
                   <Shield className="w-4 h-4 mr-2" />
